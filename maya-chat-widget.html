@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Maya — Mobile Massage Chat</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!--
+  ============================================================
+  MAYA'S MOBILE MASSAGE — AI CHAT WIDGET
+  ============================================================
+  A self-contained, rule-based FAQ chatbot for a mobile
+  massage therapist. No API keys or backend required.
+
+  HOW TO CUSTOMIZE:
+  1. Update CONFIG (section below) with your client's details
+  2. Update RESPONSES with their services, prices, FAQs
+  3. Drop the file anywhere — works as a standalone page,
+     an iframe embed, or paste the <style>+HTML+<script>
+     into Carrd / Framer / Webflow custom HTML blocks.
+
+  EMBEDDING AS IFRAME:
+    <iframe src="maya-chat-widget.html"
+            style="width:100%;height:520px;border:none;border-radius:16px">
+    </iframe>
+
+  LAST UPDATED: 2026-04
+  ============================================================
+  -->
+
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: #f5f2ef;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    /* ── Widget Shell ── */
+    #chat-wrap {
+      width: 100%;
+      max-width: 480px;
+      background: #ffffff;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.10);
+    }
+
+    /* ── Header ── */
+    #chat-header {
+      background: var(--brand);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    #avatar {
+      width: 46px; height: 46px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.22);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'DM Serif Display', serif;
+      font-size: 20px; color: #fff;
+      flex-shrink: 0;
+    }
+    #header-name {
+      font-family: 'DM Serif Display', serif;
+      font-size: 16px; font-weight: 400;
+      color: #fff;
+    }
+    #header-status {
+      font-size: 12px;
+      color: rgba(255,255,255,0.78);
+      display: flex; align-items: center; gap: 6px;
+      margin-top: 2px;
+    }
+    #online-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #a8e6b8;
+      flex-shrink: 0;
+    }
+
+    /* ── Message List ── */
+    #messages {
+      height: 360px;
+      overflow-y: auto;
+      padding: 16px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: #f9f6f3;
+      scroll-behavior: smooth;
+    }
+    #messages::-webkit-scrollbar { width: 4px; }
+    #messages::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+
+    /* ── Bubbles ── */
+    .msg { display: flex; flex-direction: column; max-width: 84%; }
+    .msg.maya { align-self: flex-start; }
+    .msg.user { align-self: flex-end; }
+    .bubble {
+      padding: 10px 14px;
+      font-size: 14px;
+      line-height: 1.58;
+      border-radius: 18px;
+    }
+    .maya .bubble {
+      background: #ffffff;
+      border: 0.5px solid #e8e3de;
+      color: #2c2420;
+      border-bottom-left-radius: 4px;
+    }
+    .user .bubble {
+      background: var(--brand);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+    .ts {
+      font-size: 11px;
+      color: #a09890;
+      margin-top: 3px;
+      padding: 0 2px;
+    }
+    .user .ts { text-align: right; }
+
+    /* ── Typing indicator ── */
+    #typing {
+      display: none;
+      align-self: flex-start;
+      padding: 10px 14px;
+      background: #ffffff;
+      border: 0.5px solid #e8e3de;
+      border-radius: 18px;
+      border-bottom-left-radius: 4px;
+      gap: 5px;
+      align-items: center;
+    }
+    .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #b0a89f;
+      animation: bounce 1.2s infinite;
+    }
+    .dot:nth-child(2) { animation-delay: .2s; }
+    .dot:nth-child(3) { animation-delay: .4s; }
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30%            { transform: translateY(-6px); }
+    }
+
+    /* ── Quick-reply buttons ── */
+    #quick-btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      padding: 12px 14px;
+      border-top: 0.5px solid #ede8e3;
+      background: #ffffff;
+    }
+    .qbtn {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      padding: 6px 12px;
+      cursor: pointer;
+      border-radius: 20px;
+      border: 1px solid var(--brand);
+      color: var(--brand);
+      background: transparent;
+      transition: background .15s, color .15s;
+      white-space: nowrap;
+    }
+    .qbtn:hover { background: var(--brand); color: #fff; }
+
+    /* ── Input row ── */
+    #input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px 14px;
+      background: #ffffff;
+    }
+    #user-input {
+      flex: 1;
+      border: 1px solid #ddd8d2;
+      border-radius: 22px;
+      padding: 9px 16px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      outline: none;
+      background: #f9f6f3;
+      color: #2c2420;
+      transition: border-color .15s;
+    }
+    #user-input:focus { border-color: var(--brand); }
+    #user-input::placeholder { color: #b0a89f; }
+    #send-btn {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: var(--brand);
+      border: none;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: opacity .15s;
+    }
+    #send-btn:hover { opacity: .82; }
+
+    /* ── Responsive ── */
+    @media (max-width: 520px) {
+      body { padding: .5rem; align-items: flex-start; padding-top: 1rem; }
+      #messages { height: 300px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ============================================================
+     STEP 1 — BRAND CONFIG
+     Change these values to match your client.
+     ============================================================ -->
+<script>
+const CONFIG = {
+  brandColor:   "#5a7c65",          // CSS color for header, bubbles, buttons
+  avatarLetter: "M",                // Initial shown in avatar circle
+  agentName:    "Maya — Mobile Massage",
+  statusLine:   "Usually replies instantly",
+  bookingUrl:   "https://calendly.com/mayamt",
+  inputPlaceholder: "Ask Maya anything...",
+};
+</script>
+
+<!-- ============================================================
+     STEP 2 — RESPONSE RULES
+     Each entry has:
+       keys  → array of keywords/phrases to match (lowercase)
+       reply → the message Maya sends back
+     (\n renders as a line break)
+     ============================================================ -->
+<script>
+const RESPONSES = [
+  {
+    keys: ['service','offer','menu','massage','type','option','swedish',
+           'deep tissue','relaxation','full body','stone','hot stone',
+           '60','90','price','cost','how much','rate','charge','fee'],
+    reply: `Here's what I offer! 💆‍♀️\n\n• 60-min Swedish/Relaxation — $75\n• 60-min Deep Tissue — $80\n• 90-min Full Body — $110\n• Hot stones add-on — +$20\n\nAll sessions happen at your place — I bring everything! Book at {BOOKING_URL} 😊`
+  },
+  {
+    keys: ['book','appointment','schedule','calendly','reserve',
+           'slot','available','availability'],
+    reply: `Super easy! Head to {BOOKING_URL}, pick your service, date, and time — takes about 2 minutes. Message me if you have questions first! 🗓️`
+  },
+  {
+    keys: ['area','cover','location','travel','zip','neighborhood',
+           'mile','far','distance','denver','serve','where'],
+    reply: `I cover the Denver metro area within 20 miles of downtown — basically the whole city and most suburbs! 📍 There's a small $10 travel fee for spots 15–20 miles out. Not sure if you're in range? Just ask when you book at {BOOKING_URL}!`
+  },
+  {
+    keys: ['prepare','ready','need','bring','set up','setup','room',
+           'table','space','pet','dog','cat','animal'],
+    reply: `Here's all you need:\n\n• A quiet, private room\n• Pets secured in another room\n• Payment ready (cash, Venmo, or Zelle)\n\nI handle everything else — table, linens, oils, and music! I arrive 10–15 min early to set up. Book at {BOOKING_URL} 😊`
+  },
+  {
+    keys: ['payment','pay','cash','venmo','zelle','credit','card','money'],
+    reply: `I accept cash, Venmo, and Zelle — payment is due at the end of your session. Easy! Book at {BOOKING_URL} 😊`
+  },
+  {
+    keys: ['cancel','reschedule','miss','no show','no-show','refund','policy'],
+    reply: `Just a heads up — I need at least 24 hours notice to cancel or reschedule. Late cancellations may be charged 50% of the session fee, and no-shows are charged the full amount. Life happens though, so reach out as soon as you can! Book at {BOOKING_URL}`
+  },
+  {
+    keys: ['hour','open','time','monday','tuesday','wednesday','thursday',
+           'friday','saturday','sunday','weekend','holiday'],
+    reply: `I'm available Monday through Saturday, 9am–6pm. 🕘 Closed Sundays and major holidays. Grab a time at {BOOKING_URL}!`
+  },
+  {
+    keys: ['bring','table','linen','oil','music','equipment','supply'],
+    reply: `Yep, I bring everything — table, fresh linens, oils, and relaxing music. You just need a quiet space! {BOOKING_URL} 😊`
+  },
+  {
+    keys: ['wear','undress','clothes','drape','sheet','naked','privacy','modesty'],
+    reply: `You'll be draped with a sheet the entire time — I'm fully trained in professional draping. Undress to whatever level feels comfortable for you! Book at {BOOKING_URL}`
+  },
+  {
+    keys: ['couple','two','partner','spouse','friend','double','both'],
+    reply: `Sweet idea! I work solo — one client per session — so I can't do side-by-side couples massages right now. But I can schedule back-to-back sessions! {BOOKING_URL} 😊`
+  },
+  {
+    keys: ['focus','area','back','neck','shoulder','leg','foot',
+           'specific','target','request','customize'],
+    reply: `Absolutely — just mention your focus areas when booking or when I arrive and I'll tailor the whole session. Your comfort is the priority! {BOOKING_URL}`
+  },
+  {
+    keys: ['arrive','early','setup','long','how long'],
+    reply: `I show up 10–15 minutes before your appointment to get everything set up so we can start right on time. {BOOKING_URL} 😊`
+  },
+  {
+    keys: ['hi','hello','hey','hiya','howdy','sup','good morning',
+           'good afternoon','good evening','whats up','what\'s up'],
+    reply: `Hey hey! 👋 So great to hear from you! I'm Maya — your on-demand massage therapist in Denver. Ask me anything about services, pricing, or how to book!`
+  },
+  {
+    keys: ['thank','thanks','appreciate','great','awesome','perfect','helpful','love it'],
+    reply: `You're so welcome! 😊 I'd love to see you on the table soon. Book anytime at {BOOKING_URL}!`
+  },
+];
+
+// Fallback when no keywords match
+const FALLBACK = `Great question! Feel free to book a quick call or message me directly and I'll get back to you fast. You can also grab a spot at {BOOKING_URL} anytime! 😊`;
+</script>
+
+<!-- ============================================================
+     HTML STRUCTURE — no need to edit below this line
+     ============================================================ -->
+<div id="chat-wrap">
+  <div id="chat-header">
+    <div id="avatar"></div>
+    <div>
+      <div id="header-name"></div>
+      <div id="header-status">
+        <span id="online-dot"></span>
+        <span id="status-text"></span>
+      </div>
+    </div>
+  </div>
+
+  <div id="messages">
+    <div class="msg maya" id="greeting-msg">
+      <div class="bubble"></div>
+      <div class="ts">Just now</div>
+    </div>
+    <div id="typing">
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+    </div>
+  </div>
+
+  <div id="quick-btns">
+    <button class="qbtn" onclick="sendQ('What services do you offer?')">Services &amp; pricing</button>
+    <button class="qbtn" onclick="sendQ('How do I book?')">How to book</button>
+    <button class="qbtn" onclick="sendQ('What areas do you cover?')">Service area</button>
+    <button class="qbtn" onclick="sendQ('What should I prepare?')">How to prepare</button>
+  </div>
+
+  <div id="input-row">
+    <input id="user-input" type="text" autocomplete="off" />
+    <button id="send-btn" onclick="handleSend()" aria-label="Send">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+           stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"></line>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<!-- ============================================================
+     ENGINE — do not edit unless you know what you're doing 😊
+     ============================================================ -->
+<script>
+// Apply config
+document.documentElement.style.setProperty('--brand', CONFIG.brandColor);
+document.getElementById('avatar').textContent         = CONFIG.avatarLetter;
+document.getElementById('header-name').textContent    = CONFIG.agentName;
+document.getElementById('status-text').textContent    = CONFIG.statusLine;
+document.getElementById('user-input').placeholder     = CONFIG.inputPlaceholder;
+document.getElementById('greeting-msg').querySelector('.bubble').textContent =
+  `Hey there! 👋 I'm ${CONFIG.agentName.split('—')[0].trim()} — I bring the spa to you anywhere in the Denver metro area. What can I help you with today?`;
+
+// Inject booking URL into all response strings
+function injectUrl(str) {
+  return str.replace(/\{BOOKING_URL\}/g, CONFIG.bookingUrl);
+}
+
+function getTime() {
+  return new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
+function getMayaReply(msg) {
+  const lower = msg.toLowerCase();
+  for (const r of RESPONSES) {
+    if (r.keys.some(k => lower.includes(k))) return injectUrl(r.reply);
+  }
+  return injectUrl(FALLBACK);
+}
+
+function addBubble(text, who) {
+  const container = document.getElementById('messages');
+  const typing    = document.getElementById('typing');
+  const div       = document.createElement('div');
+  div.className   = 'msg ' + who;
+  div.innerHTML   = `<div class="bubble">${text.replace(/\n/g, '<br>')}</div><div class="ts">${getTime()}</div>`;
+  container.insertBefore(div, typing);
+  container.scrollTop = container.scrollHeight;
+}
+
+function showTyping(show) {
+  document.getElementById('typing').style.display = show ? 'flex' : 'none';
+  if (show) document.getElementById('messages').scrollTop = 99999;
+}
+
+function respond(userMsg) {
+  addBubble(userMsg, 'user');
+  showTyping(true);
+  const delay = 550 + Math.random() * 500;
+  setTimeout(() => {
+    showTyping(false);
+    addBubble(getMayaReply(userMsg), 'maya');
+  }, delay);
+}
+
+function handleSend() {
+  const inp = document.getElementById('user-input');
+  const val = inp.value.trim();
+  if (!val) return;
+  inp.value = '';
+  respond(val);
+}
+
+function sendQ(q) { respond(q); }
+
+document.getElementById('user-input')
+  .addEventListener('keydown', e => { if (e.key === 'Enter') handleSend(); });
+
+showTyping(false);
+</script>
+
+</body>
+</html>
