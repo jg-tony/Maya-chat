@@ -234,6 +234,7 @@ const CONFIG = {
   statusLine:   "Usually replies instantly",
   bookingUrl:   "https://calendly.com/mayamt",
   inputPlaceholder: "Ask Maya anything...",
+  city:         "Wichita, KS",
 };
 </script>
 
@@ -259,8 +260,8 @@ const RESPONSES = [
   },
   {
     keys: ['area','cover','location','travel','zip','neighborhood',
-           'mile','far','distance','denver','serve','where'],
-    reply: `I cover the Denver metro area within 20 miles of downtown — basically the whole city and most suburbs! 📍 There's a small $10 travel fee for spots 15–20 miles out. Not sure if you're in range? Just ask when you book at {BOOKING_URL}!`
+           'mile','far','distance','wichita','kansas','ks','serve','where'],
+    reply: `I cover the Wichita, KS area within 20 miles of downtown — basically the whole city and surrounding areas! 📍 There's a small $10 travel fee for spots 15–20 miles out. Not sure if you're in range? Just ask when you book at {BOOKING_URL}!`
   },
   {
     keys: ['prepare','ready','need','bring','set up','setup','room',
@@ -302,7 +303,10 @@ const RESPONSES = [
     reply: `I show up 10–15 minutes before your appointment to get everything set up so we can start right on time. {BOOKING_URL} 😊`
   },
   {
-    keys: ['hi','hello','hey','hiya','howdy','sup','good morning',
+    keys: ['contact','phone','number','call','text','email','reach','get in touch','info'],
+    reply: `Here's how to reach me! 📬\n\n📞 Phone/Text: (720) 555-0198\n📧 Email: maya@mayamobilемassage.com\n📅 Book online: {BOOKING_URL}\n\nI typically respond within a few hours. Can't wait to hear from you! 😊`
+  },
+
            'good afternoon','good evening','whats up','what\'s up'],
     reply: `Hey hey! 👋 So great to hear from you! I'm Maya — your on-demand massage therapist in Denver. Ask me anything about services, pricing, or how to book!`
   },
@@ -373,11 +377,15 @@ document.getElementById('header-name').textContent    = CONFIG.agentName;
 document.getElementById('status-text').textContent    = CONFIG.statusLine;
 document.getElementById('user-input').placeholder     = CONFIG.inputPlaceholder;
 document.getElementById('greeting-msg').querySelector('.bubble').textContent =
-  `Hey there! 👋 I'm ${CONFIG.agentName.split('—')[0].trim()} — I bring the spa to you anywhere in the Denver metro area. What can I help you with today?`;
+  `Hey there! 👋 I'm ${CONFIG.agentName.split('—')[0].trim()} — I bring the spa to you anywhere in the Wichita, KS area. What can I help you with today?`;
 
 // Inject booking URL into all response strings
 function injectUrl(str) {
-  return str.replace(/\{BOOKING_URL\}/g, CONFIG.bookingUrl);
+  return str.replace(/\{BOOKING_URL\}/g, `<a href="${CONFIG.bookingUrl}" target="_blank" style="color:var(--brand);text-decoration:underline;font-weight:500;">${CONFIG.bookingUrl}</a>`);
+}
+
+function linkifyUrls(str) {
+  return str.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" style="color:var(--brand);text-decoration:underline;font-weight:500;">$1</a>');
 }
 
 function getTime() {
@@ -397,7 +405,7 @@ function addBubble(text, who) {
   const typing    = document.getElementById('typing');
   const div       = document.createElement('div');
   div.className   = 'msg ' + who;
-  div.innerHTML   = `<div class="bubble">${text.replace(/\n/g, '<br>')}</div><div class="ts">${getTime()}</div>`;
+  div.innerHTML   = `<div class="bubble">${linkifyUrls(text.replace(/\n/g, '<br>'))}</div><div class="ts">${getTime()}</div>`;
   container.insertBefore(div, typing);
   container.scrollTop = container.scrollHeight;
 }
